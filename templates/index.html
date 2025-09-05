@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uber Eats Menu Scraper</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍜 Uber Eats Menu Scraper</h1>
+            <p>Extract menu items and identify missing images from Uber Eats restaurants</p>
+        </header>
+
+        <main>
+            <!-- URL Input Form -->
+            <section class="input-section">
+                <form id="scrape-form">
+                    <div class="form-group">
+                        <label for="restaurant-url">Uber Eats Restaurant URL:</label>
+                        <input 
+                            type="url" 
+                            id="restaurant-url" 
+                            name="url"
+                            placeholder="https://www.ubereats.com/ca/store/restaurant-name/..."
+                            required
+                        >
+                        <button type="submit" id="scrape-btn">
+                            <span class="btn-text">Scrape Menu</span>
+                            <span class="btn-loading" style="display: none;">Scraping...</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Loading State -->
+            <section id="loading" class="loading-section" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>Scraping menu items...</p>
+                <p class="loading-subtitle">This may take 10-30 seconds</p>
+            </section>
+
+            <!-- Error Display -->
+            <section id="error" class="error-section" style="display: none;">
+                <div class="error-content">
+                    <h3>❌ Error</h3>
+                    <p id="error-message"></p>
+                    <button onclick="hideError()" class="btn-secondary">Try Again</button>
+                </div>
+            </section>
+
+            <!-- Results Display -->
+            <section id="results" class="results-section" style="display: none;">
+                <div class="results-header">
+                    <h2 id="restaurant-name"></h2>
+                    <div class="results-summary">
+                        <span id="total-items"></span>
+                        <span id="items-with-images"></span>
+                        <span id="items-without-images"></span>
+                    </div>
+                </div>
+                
+                <div id="menu-grid" class="menu-grid">
+                    <!-- Menu items will be dynamically inserted here -->
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Built with Python, Flask, and Selenium</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
