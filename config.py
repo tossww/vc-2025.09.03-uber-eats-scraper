@@ -18,7 +18,7 @@ CHROME_OPTIONS = [
     '--disable-blink-features=AutomationControlled',
     '--disable-extensions',
     '--disable-plugins',
-    '--headless',
+    '--headless',  # Enable headless mode for production
     '--disable-images',  # Disable images for faster loading
     # '--disable-javascript',  # Keep JS enabled for Uber Eats dynamic content
     '--disable-web-security',
@@ -57,14 +57,14 @@ CHROME_BINARY_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chro
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 # Timeouts and delays (optimized for speed)
-PAGE_LOAD_TIMEOUT = 15
-IMPLICIT_WAIT = 3
-SCROLL_PAUSE_TIME = 1
+PAGE_LOAD_TIMEOUT = 30
+IMPLICIT_WAIT = 5
+SCROLL_PAUSE_TIME = 2
 
 # CSS selectors for Uber Eats elements (optimized for speed and accuracy)
 SELECTORS = {
-    'restaurant_name': 'h1[data-testid="store-title"], h1[class*="title"], h1',
-    'menu_items': 'a[href*="item"], div[data-testid*="menu-item"], article[data-testid*="menu-item"]',  # More specific selectors
+    'restaurant_name': 'h1, [data-testid*="store"]',
+    'menu_items': 'a[href*="item"]',  # This is the working selector found in debug
     'item_name': 'h3, h4, h5, div[class*="name"], span[class*="name"]',
     'item_description': 'p, div[class*="description"], span[class*="description"]',
     'item_image': 'img',  # Images are directly in the menu item containers
