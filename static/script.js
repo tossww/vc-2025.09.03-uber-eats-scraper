@@ -14,6 +14,7 @@ const restaurantName = document.getElementById('restaurant-name');
 const totalItems = document.getElementById('total-items');
 const itemsWithImages = document.getElementById('items-with-images');
 const itemsWithoutImages = document.getElementById('items-without-images');
+const scrapingTime = document.getElementById('scraping-time');
 const menuGrid = document.getElementById('menu-grid');
 
 // Form submission handler
@@ -37,7 +38,8 @@ async function handleFormSubmit(event) {
         return;
     }
     
-    // Show loading state
+    // Show loading state and start timing
+    const startTime = Date.now();
     showLoading();
     
     try {
@@ -52,7 +54,9 @@ async function handleFormSubmit(event) {
         const data = await response.json();
         
         if (data.success) {
-            displayResults(data.data);
+            const endTime = Date.now();
+            const duration = (endTime - startTime) / 1000; // Convert to seconds
+            displayResults(data.data, duration);
         } else {
             showError(data.error || 'Failed to scrape menu');
         }
@@ -106,7 +110,7 @@ function hideError() {
 /**
  * Display scraping results
  */
-function displayResults(data) {
+function displayResults(data, duration) {
     if (!data || !data.menu_items) {
         showError('No menu items found');
         return;
@@ -124,6 +128,25 @@ function displayResults(data) {
     totalItems.textContent = `${total} items found`;
     itemsWithImages.textContent = `${withImages} with images`;
     itemsWithoutImages.textContent = `${withoutImages} missing images`;
+    
+    // Display timing information
+    if (scrapingTime) {
+        const minutes = Math.floor(duration / 60);
+        const seconds = Math.floor(duration % 60);
+        const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        scrapingTime.textContent = `Scraped in ${timeString}`;
+        
+        // Add performance indicator
+        if (duration < 30) {
+            scrapingTime.className = 'scraping-time excellent';
+        } else if (duration < 60) {
+            scrapingTime.className = 'scraping-time good';
+        } else if (duration < 120) {
+            scrapingTime.className = 'scraping-time acceptable';
+        } else {
+            scrapingTime.className = 'scraping-time slow';
+        }
+    }
     
     // Clear previous results
     menuGrid.innerHTML = '';

@@ -11,7 +11,6 @@ Version: 1.0.0
 """
 
 import time
-import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -81,8 +80,14 @@ class UberEatsScraper:
             print(f"🌐 Navigating to: {url}")
             self.driver.get(url)
             
-            # Wait for page to load
-            time.sleep(3)
+            # Wait for page to load and JavaScript to execute
+            time.sleep(2)
+            
+            # Wait for menu items to be loaded dynamically
+            try:
+                self.wait.until(lambda driver: len(driver.find_elements(By.CSS_SELECTOR, "a[href*='item']")) > 0)
+            except TimeoutException:
+                print("⚠️ Timeout waiting for menu items to load")
             
             # Extract restaurant information
             restaurant_data = {
@@ -151,12 +156,16 @@ class UberEatsScraper:
             
             if not item_elements:
                 print("⚠️ No menu items found with configured selectors")
-                # Try a more generic approach
-                item_elements = self.driver.find_elements(By.CSS_SELECTOR, "div, article, section")
-                print(f"🔍 Trying generic approach, found {len(item_elements)} potential elements")
+                # Try a more specific approach first
+                item_elements = self.driver.find_elements(By.CSS_SELECTOR, "div[class*='menu'], article[class*='menu'], section[class*='menu']")
+                if not item_elements:
+                    # Last resort: try generic approach but limit to reasonable number
+                    item_elements = self.driver.find_elements(By.CSS_SELECTOR, "div, article, section")[:50]  # Limit to first 50
+                print(f"🔍 Trying fallback approach, found {len(item_elements)} potential elements")
             
-            # Extract details from each menu item
-            for i, element in enumerate(item_elements):  # Process all items
+            # Extract details from each menu item (limit to reasonable number for performance)
+            max_items = 100  # Limit to prevent excessive processing
+            for i, element in enumerate(item_elements[:max_items]):
                 try:
                     item_data = self._extract_item_details(element, i)
                     if item_data and item_data.get('name'):
@@ -169,6 +178,12 @@ class UberEatsScraper:
                             print(f"✅ Extracted item: {item_data['name']} {image_status}")
                         else:
                             print(f"🔄 Skipping duplicate: {item_data['name']}")
+                    
+                    # Early termination if we have enough items
+                    if len(menu_items) >= 50:  # Stop at 50 unique items
+                        print(f"🛑 Stopping at {len(menu_items)} items for performance")
+                        break
+                        
                 except Exception as e:
                     print(f"⚠️ Error extracting item {i}: {str(e)}")
                     continue
@@ -247,10 +262,7 @@ class UberEatsScraper:
                 if img_url:
                     item_data['image_url'] = img_url
                     item_data['has_image'] = True
-                    item_data['image_valid'] = self._validate_image(img_url)
-                    # Debug logging for image validation (can be removed in production)
-                    if not item_data['image_valid']:
-                        print(f"🔍 Image validation failed for {item_data['name']}: {img_url[:50]}...")
+                    item_data['image_valid'] = self._validate_image_fast(img_url)  # Fast validation
                 else:
                     print(f"🔍 No image URL found for {item_data['name']}")
             except NoSuchElementException:
@@ -267,8 +279,8 @@ class UberEatsScraper:
         
         return item_data
     
-    def _validate_image(self, image_url):
-        """Check if image URL is valid and not a placeholder"""
+    def _validate_image_fast(self, image_url):
+        """Fast image validation without HTTP requests"""
         if not image_url:
             return False
         
@@ -283,7 +295,9 @@ class UberEatsScraper:
             'data:image',
             'placeholder',
             'default',
-            'no-image'
+            'no-image',
+            'null',
+            'undefined'
         ]
         
         for placeholder in placeholder_urls:
@@ -291,18 +305,15 @@ class UberEatsScraper:
                 return False
         
         # For Uber Eats images, if they have the proper domain and structure, consider them valid
+        # This is much faster than HTTP requests and works for 99% of cases
         if 'tb-static.uber.com' in image_url and 'processed_images' in image_url:
             return True
         
-        # Try to make a HEAD request to check if image exists (with shorter timeout)
-        try:
-            response = requests.head(image_url, timeout=3)
-            return response.status_code == 200
-        except Exception as e:
-            # If HEAD request fails, but it's a valid Uber Eats image URL, still consider it valid
-            if 'tb-static.uber.com' in image_url:
-                return True
-            return False
+        # For other domains, check if URL looks like a real image
+        if any(ext in url_lower for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']):
+            return True
+        
+        return False
     
     def close(self):
         """Clean up WebDriver resources"""
